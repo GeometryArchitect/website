@@ -1,0 +1,215 @@
+---
+const title = 'Geometry Architect';
+const year = new Date().getFullYear();
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} | Coming Soon</title>
+    <meta name="description" content="Geometry Architect. Coming soon." />
+    <meta name="theme-color" content="#07080c" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content="Coming soon." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;700&family=JetBrains+Mono&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <canvas id="scene" aria-hidden="true"></canvas>
+    <div class="grid" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+
+    <main>
+      <p class="tag">// initializing</p>
+      <h1>
+        <span>Geometry</span>
+        <span class="accent">Architect</span>
+      </h1>
+      <div class="rule"></div>
+      <p class="soon">Coming Soon</p>
+    </main>
+
+    <footer>&copy; {year} Geometry Architect</footer>
+
+    <style is:global>
+      :root {
+        --bg: #07080c;
+        --fg: #e8ecf4;
+        --muted: #7a8296;
+        --cyan: #7cf3ff;
+        --violet: #b78cff;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { height: 100%; }
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: 'Space Grotesk', system-ui, sans-serif;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+      }
+      #scene { position: fixed; inset: 0; width: 100%; height: 100%; }
+      .grid {
+        position: fixed;
+        left: -50%; right: -50%; bottom: -10%; height: 70%;
+        background-image:
+          linear-gradient(rgba(124, 243, 255, 0.08) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(124, 243, 255, 0.08) 1px, transparent 1px);
+        background-size: 48px 48px;
+        transform: perspective(500px) rotateX(60deg);
+        transform-origin: center bottom;
+        animation: drift 6s linear infinite;
+        -webkit-mask-image: linear-gradient(to top, #000 20%, transparent 90%);
+        mask-image: linear-gradient(to top, #000 20%, transparent 90%);
+        pointer-events: none;
+      }
+      @keyframes drift { to { background-position: 0 48px, 0 0; } }
+      .vignette {
+        position: fixed; inset: 0; pointer-events: none;
+        background: radial-gradient(ellipse at center, transparent 35%, var(--bg) 90%);
+      }
+      main {
+        position: relative; z-index: 1;
+        text-align: center; padding: 0 16px;
+        animation: rise 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+      }
+      @keyframes rise { from { opacity: 0; transform: translateY(24px); filter: blur(8px); } }
+      .tag {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.8rem; letter-spacing: 0.2em;
+        color: var(--cyan); opacity: 0.7; margin-bottom: 1.5rem;
+      }
+      h1 {
+        font-weight: 700;
+        font-size: clamp(2.6rem, 10vw, 7rem);
+        line-height: 0.95; letter-spacing: -0.03em;
+        text-transform: uppercase;
+      }
+      h1 span { display: block; }
+      h1 .accent {
+        font-weight: 300;
+        background: linear-gradient(90deg, var(--cyan), var(--violet));
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+      }
+      .rule {
+        width: 64px; height: 1px; margin: 2rem auto;
+        background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      }
+      .soon {
+        font-size: clamp(0.85rem, 2vw, 1rem);
+        letter-spacing: 0.6em; text-transform: uppercase;
+        color: var(--muted); padding-left: 0.6em;
+        animation: pulse 3s ease-in-out infinite;
+      }
+      @keyframes pulse { 50% { opacity: 0.45; } }
+      footer {
+        position: fixed; bottom: 20px; left: 0; right: 0; z-index: 1;
+        text-align: center; font-size: 0.75rem; color: var(--muted); opacity: 0.6;
+        font-family: 'JetBrains Mono', monospace;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation: none !important; }
+      }
+    </style>
+
+    <script>
+      // Rotating wireframe polyhedra on a 2D canvas. No dependencies.
+      type V = [number, number, number];
+
+      const canvas = document.getElementById('scene') as HTMLCanvasElement;
+      const ctx = canvas.getContext('2d')!;
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      const phi = (1 + Math.sqrt(5)) / 2;
+      const icoV: V[] = [
+        [-1, phi, 0], [1, phi, 0], [-1, -phi, 0], [1, -phi, 0],
+        [0, -1, phi], [0, 1, phi], [0, -1, -phi], [0, 1, -phi],
+        [phi, 0, -1], [phi, 0, 1], [-phi, 0, -1], [-phi, 0, 1],
+      ];
+      const cubeV: V[] = [];
+      for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) cubeV.push([x, y, z]);
+      const octV: V[] = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+
+      // Edges = all vertex pairs at the minimum distance (works for regular solids).
+      const dist = (a: V, b: V) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+      const edgesFor = (verts: V[]) => {
+        let min = Infinity;
+        for (let i = 0; i < verts.length; i++)
+          for (let j = i + 1; j < verts.length; j++) min = Math.min(min, dist(verts[i], verts[j]));
+        const e: [number, number][] = [];
+        for (let i = 0; i < verts.length; i++)
+          for (let j = i + 1; j < verts.length; j++)
+            if (Math.abs(dist(verts[i], verts[j]) - min) < 1e-3) e.push([i, j]);
+        return e;
+      };
+
+      const shapes = [
+        { v: icoV, size: 0.34, x: 0, y: 0, speed: 0.00012, color: '124,243,255', alpha: 0.22 },
+        { v: cubeV, size: 0.07, x: -0.34, y: -0.28, speed: 0.0004, color: '183,140,255', alpha: 0.45 },
+        { v: octV, size: 0.09, x: 0.35, y: 0.26, speed: 0.0003, color: '124,243,255', alpha: 0.45 },
+      ].map((s) => ({ ...s, e: edgesFor(s.v), norm: Math.hypot(...s.v[0]) }));
+
+      let w = 0, h = 0;
+      const resize = () => {
+        const dpr = Math.min(devicePixelRatio || 1, 2);
+        w = innerWidth; h = innerHeight;
+        canvas.width = w * dpr; canvas.height = h * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        if (reduced) draw(0);
+      };
+
+      let mx = 0, my = 0, tx = 0, ty = 0;
+      addEventListener('pointermove', (e) => {
+        tx = (e.clientX / w - 0.5) * 0.8;
+        ty = (e.clientY / h - 0.5) * 0.8;
+      });
+
+      function draw(t: number) {
+        mx += (tx - mx) * 0.04; my += (ty - my) * 0.04;
+        ctx.clearRect(0, 0, w, h);
+        const m = Math.min(w, h);
+        for (const s of shapes) {
+          const a = t * s.speed + mx, b = t * s.speed * 0.7 + my + 0.5;
+          const ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b);
+          const pts = s.v.map(([x, y, z]) => {
+            const x1 = x * ca - z * sa, z1 = x * sa + z * ca;
+            const y1 = y * cb - z1 * sb, z2 = (y * sb + z1 * cb) / s.norm;
+            const p = 4 / (4 + z2);
+            return [
+              w / 2 + s.x * w + (x1 / s.norm) * m * s.size * p,
+              h / 2 + s.y * h + (y1 / s.norm) * m * s.size * p,
+              z2,
+            ];
+          });
+          for (const [i, j] of s.e) {
+            const depth = (2 - (pts[i][2] + pts[j][2])) / 4; // 0 back, 1 front
+            ctx.strokeStyle = `rgba(${s.color},${s.alpha * (0.3 + depth)})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(pts[i][0], pts[i][1]);
+            ctx.lineTo(pts[j][0], pts[j][1]);
+            ctx.stroke();
+          }
+          ctx.fillStyle = `rgba(${s.color},${Math.min(1, s.alpha * 2)})`;
+          for (const p of pts) {
+            ctx.beginPath();
+            ctx.arc(p[0], p[1], 1.6, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        if (!reduced) requestAnimationFrame(draw);
+      }
+
+      addEventListener('resize', resize);
+      resize();
+      if (!reduced) requestAnimationFrame(draw);
+    </script>
+  </body>
+</html>
